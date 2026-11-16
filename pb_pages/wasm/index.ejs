@@ -1,0 +1,78 @@
+<% slot('title', () => { %>WASM<% }) %>
+<header>
+  <h1>WASM</h1>
+  <div class="row">
+    <span class="muted"><%= ctx.auth.email() %></span>
+    <form method="post" action="/logout" class="inline"><button>Sign out</button></form>
+  </div>
+</header>
+
+<section class="card">
+  <h2>pb_wasm/</h2>
+  <p class="muted">A plugin is a closed box: it gets the input your pb_hooks give it and returns a result. It can't
+    reach the database, files or network.</p>
+  <p class="muted">Each plugin is a file in <code>pb_wasm/</code>, beside <code>pb_hooks/</code>:
+    <code>&lt;name&gt;.wasm</code>, and optionally <code>&lt;name&gt;.json</code> (description, version, functions
+    (default: <code>run</code>), language, repository and examples). Copy, deploy or upload it with the rest of your
+    code: each call reads the files as they are then, so the next call gets the new version, with no restart. To turn
+    a plugin off, remove or rename its <code>.wasm</code>.</p>
+</section>
+
+<section class="card">
+  <h2>Limits</h2>
+  <table>
+    <tr><th>Calls at once</th><td><%= data.limits.maxConcurrent %></td></tr>
+    <tr><th>Max RAM per call</th><td><%= data.limits.maxCallMemoryMB %> MB <span class="muted">· what one running
+      call may allocate; every call has its own</span></td></tr>
+    <tr><th>Modules running at once</th><td><%= data.limits.maxModulesMB %> MB <span class="muted">· the
+      <code>.wasm</code> file sizes of the running calls, added up; also the largest module that runs</span></td></tr>
+    <tr><th>Time per call</th><td><%= data.limits.timeoutMs / 1000 %> s <span class="muted">· of running; compiling
+      comes before it</span></td></tr>
+    <tr><th>Input or output</th><td><%= Math.round(data.limits.maxPayload / (1 << 20)) %> MB</td></tr>
+  </table>
+  <p class="muted">A call waits until it fits in both "at once" limits, up to <%= data.limits.timeoutMs / 1000 %> s, then fails as
+    <code>busy</code>. So a plugin's calls run at once as many times as its module fits in
+    <%= data.limits.maxModulesMB %> MB, and at most <%= data.limits.maxConcurrent %> times.</p>
+</section>
+
+<% if (!data.plugins.length) { %>
+  <p class="muted">No plugins in pb_wasm/ yet.</p>
+<% } %>
+
+<% for (const p of data.plugins) { %>
+  <section class="card" id="<%= p.name %>">
+    <div class="row">
+      <h2><% if (p.running) { %><a href="/wasm/<%= encodeURIComponent(p.name) %>"><%= p.name %></a><% } else { %><%= p.name %><% } %></h2>
+      <% if (p.running) { %><span class="badge on">on</span>
+      <% } else { %><span class="badge err">error</span><% } %>
+    </div>
+    <% if (p.description) { %><p><%= p.description %></p><% } %>
+    <% if (p.error) { %><p class="flash error"><%= p.error %></p><% } %>
+    <% if (p.running) { %>
+    <table>
+      <tr><th>Functions</th><td>
+        <% for (const f of p.functions) { %><code><%= f %></code> <% } %>
+      </td></tr>
+      <tr><th>In pb_hooks</th><td>
+        <code>$wasm.<%= p.functions[0] === 'run' ? `run("${p.name}", input)` : `call("${p.name}", "${p.functions[0]}", input)` %></code>
+      </td></tr>
+      <tr><th>Module</th><td><%= p.sizeText %></td></tr>
+      <% if (p.version) { %><tr><th>Version</th><td><%= p.version %></td></tr><% } %>
+      <% if (p.language) { %><tr><th>Language</th><td><%= p.language %></td></tr><% } %>
+      <% if (p.repository) { %><tr><th>Source</th><td><a href="<%= p.repository %>" rel="noopener noreferrer nofollow" target="_blank"><%= p.repository %></a></td></tr><% } %>
+      <tr><th>Files</th><td class="muted"><code>pb_wasm/<%= p.name %>.wasm</code></td></tr>
+    </table>
+    <% p.examples.forEach((ex, i) => { %>
+    <details class="example">
+      <summary>Example <%= i + 1 %>: <code><%= ex.function %></code> <span class="muted"><%= ex.preview %></span></summary>
+      <p><a href="/wasm/<%= encodeURIComponent(p.name) %>?example=<%= i + 1 %>">Try it →</a></p>
+      <table>
+        <tr><th>In pb_hooks</th><td><pre><code><%= ex.hook %></code></pre></td></tr>
+        <tr><th>Locally</th><td><pre><code><%= ex.local %></code></pre></td></tr>
+        <% if (ex.want) { %><tr><th>Gives</th><td><pre><code><%= ex.want %></code></pre></td></tr><% } %>
+      </table>
+    </details>
+    <% }) %>
+    <% } %>
+  </section>
+<% } %>

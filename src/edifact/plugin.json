@@ -1,0 +1,155 @@
+{
+  "description": "Parses an EDIFACT message (raw text) into segments, elements and components",
+  "version": "1.0.0",
+  "functions": ["run"],
+  "examples": [
+    {
+      "function": "run",
+      "input": "UNH+1+ORDERS:D:96A:UN'\nBGM+220+PO-1+9'\nUNT+3+1'",
+      "output": {
+        "type": "ORDERS",
+        "count": 3,
+        "segments": [
+          {"tag": "UNH", "elements": [["1"], ["ORDERS", "D", "96A", "UN"]]},
+          {"tag": "BGM", "elements": [["220"], ["PO-1"], ["9"]]},
+          {"tag": "UNT", "elements": [["3"], ["1"]]}
+        ]
+      }
+    },
+    {
+      "function": "run",
+      "input": "UNA:+.? '\nUNB+UNOC:3+4012345000009:14+8712199999999:14+200625:1645+3++++0++0'\nUNH+1+ORDERS:D:96A:UN'\nBGM+220+2738662+9'\nDTM+137:20200304:102'\nRFF+ON:2738662'\nNAD+BY+4012345000009::9++Buyer Company BV+Example Street 1+Example City++12345+FR'\nCTA+OC+:Purchaser'\nCOM+purchaser@example.com:EM'\nNAD+SU+8712199999999::9++Supplier Name+Supplier Street+SuppliCity++Postalcode'\nNAD+IV+4012345000023::9++Buyer Company BV+PO Box 100+Example Town++1234 AB+NL'\nNAD+DP+4012345000016::9++Buyer Company BV+Warehouse Street 1+Example City++12346+FR'\nCUX+2:EUR:9'\nLIN+10++8712100000003:EN'\nPIA+5+ABC1234:SA'\nPIA+5+DEF345:IN'\nIMD+F++:::Product description 1'\nQTY+21:2:EA'\nDTM+2:20200311:102'\nMOA+203:200.44'\nPRI+AAA:33.41:::1:PCE'\nPRI+AAB:41:::1:PCE'\nALC+A'\nPCD+12:16:1'\nALC+A'\nPCD+12:3:1'\nLIN+15++8712100000010:EN'\nPIA+5+AB80:SA'\nPIA+5+DE80:IN'\nIMD+F++:::Product description 2'\nQTY+21:6:EA'\nDTM+2:20200311:102'\nMOA+203:152.76'\nPRI+AAA:152.76:::1:PCE'\nPRI+AAB:152.76:::1:PCE'\nLIN+20++8712100000027:EN'\nPIA+5+CD90:SA'\nPIA+5+EF90:IN'\nIMD+F++:::Product description 3'\nQTY+21:2:EA'\nDTM+2:20200311:102'\nMOA+203:66.2'\nPRI+AAA:66.2:::1:PCE'\nPRI+AAB:66.2:::1:PCE'\nLIN+25++8712100000034:EN'\nPIA+5+ABC-D-BL:SA'\nPIA+5+ABCDBL:IN'\nIMD+F++:::Product description 4'\nQTY+21:7:EA'\nDTM+2:20200311:102'\nMOA+203:321.56'\nPRI+AAA:10.72:::1:PCE'\nPRI+AAB:17:::1:PCE'\nALC+A'\nPCD+12:35:1'\nALC+A'\nPCD+12:3:1'\nUNS+S'\nUNT+45+1'\nUNZ+1+3'\n",
+      "output": {
+        "count": 59,
+        "segments": [
+          {
+            "tag": "UNB",
+            "elements": [
+              ["UNOC", "3"],
+              ["4012345000009", "14"],
+              ["8712199999999", "14"],
+              ["200625", "1645"],
+              ["3"],
+              [""],
+              [""],
+              [""],
+              ["0"],
+              [""],
+              ["0"]
+            ]
+          },
+          {"tag": "UNH", "elements": [["1"], ["ORDERS", "D", "96A", "UN"]]},
+          {"tag": "BGM", "elements": [["220"], ["2738662"], ["9"]]},
+          {"tag": "DTM", "elements": [["137", "20200304", "102"]]},
+          {"tag": "RFF", "elements": [["ON", "2738662"]]},
+          {
+            "tag": "NAD",
+            "elements": [
+              ["BY"],
+              ["4012345000009", "", "9"],
+              [""],
+              ["Buyer Company BV"],
+              ["Example Street 1"],
+              ["Example City"],
+              [""],
+              ["12345"],
+              ["FR"]
+            ]
+          },
+          {"tag": "CTA", "elements": [["OC"], ["", "Purchaser"]]},
+          {"tag": "COM", "elements": [["purchaser@example.com", "EM"]]},
+          {
+            "tag": "NAD",
+            "elements": [
+              ["SU"],
+              ["8712199999999", "", "9"],
+              [""],
+              ["Supplier Name"],
+              ["Supplier Street"],
+              ["SuppliCity"],
+              [""],
+              ["Postalcode"]
+            ]
+          },
+          {
+            "tag": "NAD",
+            "elements": [
+              ["IV"],
+              ["4012345000023", "", "9"],
+              [""],
+              ["Buyer Company BV"],
+              ["PO Box 100"],
+              ["Example Town"],
+              [""],
+              ["1234 AB"],
+              ["NL"]
+            ]
+          },
+          {
+            "tag": "NAD",
+            "elements": [
+              ["DP"],
+              ["4012345000016", "", "9"],
+              [""],
+              ["Buyer Company BV"],
+              ["Warehouse Street 1"],
+              ["Example City"],
+              [""],
+              ["12346"],
+              ["FR"]
+            ]
+          },
+          {"tag": "CUX", "elements": [["2", "EUR", "9"]]},
+          {"tag": "LIN", "elements": [["10"], [""], ["8712100000003", "EN"]]},
+          {"tag": "PIA", "elements": [["5"], ["ABC1234", "SA"]]},
+          {"tag": "PIA", "elements": [["5"], ["DEF345", "IN"]]},
+          {"tag": "IMD", "elements": [["F"], [""], ["", "", "", "Product description 1"]]},
+          {"tag": "QTY", "elements": [["21", "2", "EA"]]},
+          {"tag": "DTM", "elements": [["2", "20200311", "102"]]},
+          {"tag": "MOA", "elements": [["203", "200.44"]]},
+          {"tag": "PRI", "elements": [["AAA", "33.41", "", "", "1", "PCE"]]},
+          {"tag": "PRI", "elements": [["AAB", "41", "", "", "1", "PCE"]]},
+          {"tag": "ALC", "elements": [["A"]]},
+          {"tag": "PCD", "elements": [["12", "16", "1"]]},
+          {"tag": "ALC", "elements": [["A"]]},
+          {"tag": "PCD", "elements": [["12", "3", "1"]]},
+          {"tag": "LIN", "elements": [["15"], [""], ["8712100000010", "EN"]]},
+          {"tag": "PIA", "elements": [["5"], ["AB80", "SA"]]},
+          {"tag": "PIA", "elements": [["5"], ["DE80", "IN"]]},
+          {"tag": "IMD", "elements": [["F"], [""], ["", "", "", "Product description 2"]]},
+          {"tag": "QTY", "elements": [["21", "6", "EA"]]},
+          {"tag": "DTM", "elements": [["2", "20200311", "102"]]},
+          {"tag": "MOA", "elements": [["203", "152.76"]]},
+          {"tag": "PRI", "elements": [["AAA", "152.76", "", "", "1", "PCE"]]},
+          {"tag": "PRI", "elements": [["AAB", "152.76", "", "", "1", "PCE"]]},
+          {"tag": "LIN", "elements": [["20"], [""], ["8712100000027", "EN"]]},
+          {"tag": "PIA", "elements": [["5"], ["CD90", "SA"]]},
+          {"tag": "PIA", "elements": [["5"], ["EF90", "IN"]]},
+          {"tag": "IMD", "elements": [["F"], [""], ["", "", "", "Product description 3"]]},
+          {"tag": "QTY", "elements": [["21", "2", "EA"]]},
+          {"tag": "DTM", "elements": [["2", "20200311", "102"]]},
+          {"tag": "MOA", "elements": [["203", "66.2"]]},
+          {"tag": "PRI", "elements": [["AAA", "66.2", "", "", "1", "PCE"]]},
+          {"tag": "PRI", "elements": [["AAB", "66.2", "", "", "1", "PCE"]]},
+          {"tag": "LIN", "elements": [["25"], [""], ["8712100000034", "EN"]]},
+          {"tag": "PIA", "elements": [["5"], ["ABC-D-BL", "SA"]]},
+          {"tag": "PIA", "elements": [["5"], ["ABCDBL", "IN"]]},
+          {"tag": "IMD", "elements": [["F"], [""], ["", "", "", "Product description 4"]]},
+          {"tag": "QTY", "elements": [["21", "7", "EA"]]},
+          {"tag": "DTM", "elements": [["2", "20200311", "102"]]},
+          {"tag": "MOA", "elements": [["203", "321.56"]]},
+          {"tag": "PRI", "elements": [["AAA", "10.72", "", "", "1", "PCE"]]},
+          {"tag": "PRI", "elements": [["AAB", "17", "", "", "1", "PCE"]]},
+          {"tag": "ALC", "elements": [["A"]]},
+          {"tag": "PCD", "elements": [["12", "35", "1"]]},
+          {"tag": "ALC", "elements": [["A"]]},
+          {"tag": "PCD", "elements": [["12", "3", "1"]]},
+          {"tag": "UNS", "elements": [["S"]]},
+          {"tag": "UNT", "elements": [["45"], ["1"]]},
+          {"tag": "UNZ", "elements": [["1"], ["3"]]}
+        ],
+        "type": "ORDERS"
+      }
+    }
+  ]
+}

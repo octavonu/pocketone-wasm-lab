@@ -1,0 +1,176 @@
+<% const p = data.plugin %>
+<% slot('title', () => { %><%= p ? p.name : 'Not found' %> · WASM<% }) %>
+<style>
+  main { max-width: 1240px; }
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 860px) { .split { grid-template-columns: 1fr; } }
+  textarea { width: 100%; min-height: 340px; font: 13px/1.45 ui-monospace, monospace; color: inherit;
+    background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 8px; resize: vertical; }
+  select { font: inherit; color: inherit; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; }
+  .box { min-height: 340px; }
+  .out { background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 8px; min-height: 120px;
+    font: 13px/1.45 ui-monospace, monospace; }
+  .log { min-height: 48px; }
+  .status { font-weight: 600; }
+  .status.ok { color: var(--ok); } .status.bad { color: var(--bad); }
+  .tools { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; align-items: center; }
+  .copy { width: 100%; }
+</style>
+
+<header>
+  <h1><a href="/wasm">WASM</a> / <%= p ? p.name : ctx.params.name %></h1>
+  <div class="row">
+    <span class="muted"><%= ctx.auth.email() %></span>
+    <form method="post" action="/logout" class="inline"><button>Sign out</button></form>
+  </div>
+</header>
+
+<% if (!p) { %>
+  <p class="flash error">No plugin called <code><%= ctx.params.name %></code> in <code>pb_wasm/</code>.</p>
+<% } else if (!p.running) { %>
+  <p class="flash error">Not running: <%= p.error %></p>
+<% } else { %>
+  <section class="card">
+    <div class="row">
+      <% if (p.description) { %><span><%= p.description %></span><% } %>
+      <% if (p.version) { %><span class="badge off">v<%= p.version %></span><% } %>
+      <% if (p.language) { %><span class="badge off"><%= p.language %></span><% } %>
+      <% if (p.repository) { %><a href="<%= p.repository %>" rel="noopener noreferrer nofollow" target="_blank">source</a><% } %>
+    </div>
+    <p class="muted">Module <%= data.sizeText %> · the calls running at once share
+      <%= data.limits.maxModulesMB %> MB of modules and <%= data.limits.maxConcurrent %> calls · each call may
+      allocate <%= data.limits.maxCallMemoryMB %> MB</p>
+  </section>
+
+  <div class="split">
+    <section class="card box">
+      <div class="row" style="justify-content: space-between">
+        <h2>In</h2>
+        <label class="muted">function
+          <select id="fn"><% for (const f of p.functions) { %><option><%= f %></option><% } %></select>
+        </label>
+      </div>
+      <div class="tools">
+        <label class="muted"><input type="radio" name="mode" value="json" checked> JSON</label>
+        <label class="muted"><input type="radio" name="mode" value="text"> text, as it is</label>
+        <label class="muted">file <input type="file" id="file"></label>
+      </div>
+      <% if (p.examples.length) { %>
+      <div class="tools"><span class="muted">examples:</span>
+        <% p.examples.forEach((ex, i) => { %><button type="button" data-example="<%= i %>"><%= i + 1 %>. <%= ex.function %></button><% }) %>
+      </div>
+      <% } %>
+      <textarea id="input" spellcheck="false" placeholder="the plugin's stdin"></textarea>
+      <div class="tools">
+        <button class="primary" id="run">Run</button>
+        <span class="muted">Ctrl+Enter</span>
+      </div>
+    </section>
+
+    <section class="card box">
+      <div class="row" style="justify-content: space-between">
+        <h2>Out</h2>
+        <span id="status" class="status muted">not run yet</span>
+      </div>
+      <p id="timing" class="muted"></p>
+      <pre id="output" class="out"></pre>
+      <h3>Log <span class="muted">(stderr)</span></h3>
+      <pre id="stderr" class="out log"></pre>
+    </section>
+  </div>
+
+  <section class="card">
+    <h3>The same call</h3>
+    <table>
+      <tr><th>In pb_hooks</th><td><pre><code id="hook"></code></pre></td></tr>
+      <tr><th>Locally</th><td><pre><code id="local"></code></pre></td></tr>
+    </table>
+  </section>
+
+  <script type="application/json" id="data"><%- JSON.stringify({ name: p.name, examples: p.examples }).replace(/</g, '\\u003c') %></script>
+  <script>
+    const { name, examples } = JSON.parse(document.getElementById("data").textContent)
+    const $ = (id) => document.getElementById(id)
+    const mode = () => document.querySelector("input[name=mode]:checked").value
+    let expected // the example's output, while the input is still that example's
+    const quote = (s) => "'" + s.replaceAll("'", "'\\''") + "'"
+    // canon is JSON with sorted keys, to compare an output with an example's
+    const canon = (v) => JSON.stringify(v, (k, x) => x && typeof x === "object" && !Array.isArray(x)
+      ? Object.fromEntries(Object.keys(x).sort().map((key) => [key, x[key]])) : x)
+
+    function same() {
+      const fn = $("fn").value, text = $("input").value
+      let input = text, stdin = text
+      if (mode() === "json") {
+        try { input = JSON.parse(text); stdin = typeof input === "string" ? input : JSON.stringify(input) } catch { input = text }
+      }
+      $("hook").textContent = fn === "run"
+        ? `$wasm.run(${JSON.stringify(name)}, ${JSON.stringify(input)})`
+        : `$wasm.call(${JSON.stringify(name)}, ${JSON.stringify(fn)}, ${JSON.stringify(input)})`
+      $("local").textContent = `printf '%s' ${quote(stdin)} | wazero run ${name}.wasm ${fn}`
+    }
+
+    function example(i) {
+      const ex = examples[i]
+      $("fn").value = ex.function
+      const text = typeof ex.input === "string"
+      document.querySelector(`input[name=mode][value=${text ? "text" : "json"}]`).checked = true
+      $("input").value = text ? ex.input : JSON.stringify(ex.input, null, 2)
+      expected = ex.output
+      same()
+    }
+
+    async function run() {
+      $("status").className = "status muted"
+      $("status").textContent = "running…"
+      $("run").disabled = true
+      try {
+        const res = await fetch(location.pathname, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ function: $("fn").value, input: $("input").value, mode: mode() }),
+        })
+        const r = await res.json()
+        if (r.error) {
+          $("status").className = "status bad"
+          $("status").textContent = r.error.code + (r.error.retryable ? " (retryable)" : "")
+          $("output").textContent = r.error.message
+        } else {
+          let note = ""
+          if (expected !== undefined) note = canon(r.output) === canon(expected) ? " · as the example says ✓" : " · not what the example says ✗"
+          $("status").className = "status ok"
+          $("status").textContent = "ok" + note
+          $("output").textContent = r.output === null ? "(no output)"
+            : typeof r.output === "string" ? r.output : JSON.stringify(r.output, null, 2)
+          if (note.includes("✗")) $("output").textContent += "\n\nthe example says:\n" + JSON.stringify(expected, null, 2)
+        }
+        $("stderr").textContent = r.stderr || ""
+        $("timing").textContent = r.compileMs === undefined ? "" : `compile ${r.compileMs} ms · run ${r.runMs} ms`
+      } catch (e) {
+        $("status").className = "status bad"
+        $("status").textContent = "request failed"
+        $("output").textContent = String(e)
+      } finally {
+        $("run").disabled = false
+      }
+    }
+
+    document.querySelectorAll("[data-example]").forEach((b) => b.addEventListener("click", () => example(+b.dataset.example)))
+    $("input").addEventListener("input", () => { expected = undefined; same() })
+    $("fn").addEventListener("change", () => { expected = undefined; same() })
+    document.querySelectorAll("input[name=mode]").forEach((r) => r.addEventListener("change", same))
+    $("file").addEventListener("change", async () => {
+      const f = $("file").files[0]
+      if (!f) return
+      $("input").value = await f.text()
+      document.querySelector("input[name=mode][value=text]").checked = true
+      expected = undefined
+      same()
+    })
+    $("run").addEventListener("click", run)
+    $("input").addEventListener("keydown", (e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) run() })
+    // ?example=2 opens on that example (the links on /wasm); the first one otherwise
+    const asked = Number(new URLSearchParams(location.search).get("example")) - 1
+    if (examples.length) example(examples[asked] ? asked : 0); else same()
+  </script>
+<% } %>

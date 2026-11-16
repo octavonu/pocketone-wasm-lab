@@ -1,0 +1,14 @@
+# built by setup.sh
+/bin/
+/build/
+/plugins/
+/extras/broken.wasm
+target/
+# the instances (reset.sh, pocker/setup.sh make them again)
+/pb_data/
+/pb_wasm/
+/pocker/pb_root/
+/pocker/pocketone.yaml
+/pocker/instances.yaml
+*.log
+.DS_Store

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Order>
+  <Number>PO-4711</Number>
+  <Date>2026-11-14</Date>
+  <Currency>EUR</Currency>
+  <Buyer>4012345000009</Buyer>
+  <Supplier>4098765000006</Supplier>
+  <Delivery>4012345000016</Delivery>
+  <Lines>
+    <Line number="1"><Item>4000862141404</Item><Quantity unit="PCE">10</Quantity><Price>12.50</Price></Line>
+    <Line number="2"><Item>4000862141411</Item><Quantity unit="PCE">3</Quantity><Price>7.25</Price></Line>
+  </Lines>
+</Order>

@@ -1,0 +1,27 @@
+{
+  "description": "Hostile plugin, small (Rust): tries every way out of the box (files, environment, args, TCP, HTTP, a port) and reports what it got. All refused.",
+  "version": "1.0.0",
+  "functions": ["run", "listen", "exit"],
+  "language": "Rust",
+  "examples": [
+    {
+      "input": {"target": "127.0.0.1:8090"},
+      "output": {
+        "args beyond the function": "refused: nothing there",
+        "environment": "refused: nothing there",
+        "hostname": "refused: No such file or directory (os error 44)",
+        "http GET": "refused: operation not supported on this platform",
+        "list .": "refused: No such file or directory (os error 44)",
+        "list /": "refused: No such file or directory (os error 44)",
+        "read /etc/passwd": "refused: No such file or directory (os error 44)",
+        "tcp to the target": "refused: operation not supported on this platform",
+        "write a file": "refused: No such file or directory (os error 44)"
+      }
+    },
+    {
+      "function": "listen",
+      "input": {"addr": "127.0.0.1:18777"},
+      "output": "refused: operation not supported on this platform"
+    }
+  ]
+}
