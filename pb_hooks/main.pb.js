@@ -1,5 +1,5 @@
 /// <reference path="../pb_data/types.d.ts" />
-// The lab's hooks: the only place plugins are called from. A plugin is a WASI program in pb_wasm/ (<name>.wasm): what a
+// The lab's hooks: the only place plugins are called from. A plugin is a WASI program beside them (<name>.pb.wasm): what a
 // hook gives it is its stdin (a string as it is, anything else as JSON), what it writes to stdout comes back (parsed
 // if it's JSON). The hook decides what to save.
 //
@@ -77,5 +77,5 @@ routerAdd("GET", "/api/lab/call", async (e) => {
   }
 }, $apis.requireSuperuserAuth())
 
-// The plugins in pb_wasm/ and how each is doing (plugin.sh list), superusers only.
+// The plugins in pb_hooks/ and how each is doing (plugin.sh list), superusers only.
 routerAdd("GET", "/api/lab/wasm", (e) => e.json(200, $wasm.plugins()), $apis.requireSuperuserAuth())

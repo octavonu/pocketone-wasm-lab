@@ -12,6 +12,11 @@ use std::time::Duration;
 use std::{env, fs, process};
 
 fn main() {
+    // `<name> --describe`: the manifest, kept as plugin.json beside the source
+    if env::args().nth(1).as_deref() == Some("--describe") {
+        print!("{}", include_str!("../plugin.json"));
+        return;
+    }
     let mut raw = String::new();
     std::io::stdin().read_to_string(&mut raw).ok();
     let input: Value = serde_json::from_str(&raw).unwrap_or(json!({}));

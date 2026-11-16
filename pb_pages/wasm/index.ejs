@@ -8,14 +8,14 @@
 </header>
 
 <section class="card">
-  <h2>pb_wasm/</h2>
+  <h2>pb_hooks/*.pb.wasm</h2>
   <p class="muted">A plugin is a closed box: it gets the input your pb_hooks give it and returns a result. It can't
     reach the database, files or network.</p>
-  <p class="muted">Each plugin is a file in <code>pb_wasm/</code>, beside <code>pb_hooks/</code>:
-    <code>&lt;name&gt;.wasm</code>, and optionally <code>&lt;name&gt;.json</code> (description, version, functions
-    (default: <code>run</code>), language, repository and examples). Copy, deploy or upload it with the rest of your
-    code: each call reads the files as they are then, so the next call gets the new version, with no restart. To turn
-    a plugin off, remove or rename its <code>.wasm</code>.</p>
+  <p class="muted">Each plugin is one file beside your JS hooks: <code>pb_hooks/&lt;name&gt;.pb.wasm</code>. It says
+    what it is itself, when run as <code>&lt;name&gt; --describe</code> (description, version, functions (default:
+    <code>run</code>), language, repository and examples). Copy, deploy or upload it with the rest of your code: each
+    call reads the file as it is then, and a change in <code>pb_hooks/</code> restarts the app, as for a
+    <code>.pb.js</code>. To turn a plugin off, remove or rename it.</p>
 </section>
 
 <section class="card">
@@ -36,7 +36,7 @@
 </section>
 
 <% if (!data.plugins.length) { %>
-  <p class="muted">No plugins in pb_wasm/ yet.</p>
+  <p class="muted">No plugins in pb_hooks/ yet.</p>
 <% } %>
 
 <% for (const p of data.plugins) { %>
@@ -60,7 +60,7 @@
       <% if (p.version) { %><tr><th>Version</th><td><%= p.version %></td></tr><% } %>
       <% if (p.language) { %><tr><th>Language</th><td><%= p.language %></td></tr><% } %>
       <% if (p.repository) { %><tr><th>Source</th><td><a href="<%= p.repository %>" rel="noopener noreferrer nofollow" target="_blank"><%= p.repository %></a></td></tr><% } %>
-      <tr><th>Files</th><td class="muted"><code>pb_wasm/<%= p.name %>.wasm</code></td></tr>
+      <tr><th>Files</th><td class="muted"><code>pb_hooks/<%= p.name %>.pb.wasm</code></td></tr>
     </table>
     <% p.examples.forEach((ex, i) => { %>
     <details class="example">

@@ -1,10 +1,10 @@
 /// <reference path="../../pb_data/types.d.ts" />
-// The /wasm page: what's in pb_wasm/, how each plugin is doing, the limits every call runs within, and each module's
+// The /wasm page: the plugins in pb_hooks/, how each plugin is doing, the limits every call runs within, and each module's
 // size (the calls running at once share MaxModulesMB of modules). Nothing to change here: a plugin is a file
-// (<name>.wasm, and optionally <name>.json), shipped with the app's code (a copy, `pocketone deploy`, SFTP); each
+// (pb_hooks/<name>.pb.wasm, which says what it is when run as `<name> --describe`), shipped with the app's code (a copy, `pocketone deploy`, SFTP); each
 // call reads it as it is then.
 //
-// Each example in a plugin's .json shows three ways to run it: from pb_hooks, locally with the wazero CLI, and what
+// Each example in a plugin's manifest shows three ways to run it: from pb_hooks, locally with the wazero CLI, and what
 // it should give.
 module.exports = {
   load(ctx) {
@@ -19,7 +19,7 @@ module.exports = {
           : `$wasm.call(${JSON.stringify(p.name)}, ${JSON.stringify(ex.function)}, ${JSON.stringify(ex.input)})`,
         // a string goes to stdin as it is, anything else as JSON (as $wasm.run does)
         local: `printf '%s' ${shellQuote(typeof ex.input === "string" ? ex.input : JSON.stringify(ex.input))}` +
-          ` | wazero run ${p.name}.wasm ${ex.function}`,
+          ` | wazero run ${p.name}.pb.wasm ${ex.function}`,
         // the start of the input, on one line, for the collapsed example's title
         preview: shorten((typeof ex.input === "string" ? ex.input : JSON.stringify(ex.input)).replace(/\s+/g, " ")),
         want: ex.output === undefined ? "" : typeof ex.output === "string" ? ex.output : JSON.stringify(ex.output, null, 2),

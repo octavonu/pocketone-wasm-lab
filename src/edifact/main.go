@@ -8,6 +8,7 @@
 package main
 
 import (
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -20,7 +21,20 @@ type segment struct {
 	Elements [][]string `json:"elements"`
 }
 
+// manifest is what `<name> --describe` prints: plugin.json beside the source.
+//
+//go:embed plugin.json
+var manifest string
+
 func main() {
+	switch os.Args[1] { // the function asked for: --describe prints the manifest; "run" is the only other
+	case "--describe":
+		fmt.Print(manifest)
+		return
+	case "run":
+	default:
+		fail("no_such_function", os.Args[1])
+	}
 	in, _ := io.ReadAll(os.Stdin)
 	text := strings.TrimSpace(string(in))
 	if text == "" {

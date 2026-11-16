@@ -26,7 +26,7 @@
 </header>
 
 <% if (!p) { %>
-  <p class="flash error">No plugin called <code><%= ctx.params.name %></code> in <code>pb_wasm/</code>.</p>
+  <p class="flash error">No plugin called <code><%= ctx.params.name %></code> in <code>pb_hooks/</code>.</p>
 <% } else if (!p.running) { %>
   <p class="flash error">Not running: <%= p.error %></p>
 <% } else { %>
@@ -107,7 +107,7 @@
       $("hook").textContent = fn === "run"
         ? `$wasm.run(${JSON.stringify(name)}, ${JSON.stringify(input)})`
         : `$wasm.call(${JSON.stringify(name)}, ${JSON.stringify(fn)}, ${JSON.stringify(input)})`
-      $("local").textContent = `printf '%s' ${quote(stdin)} | wazero run ${name}.wasm ${fn}`
+      $("local").textContent = `printf '%s' ${quote(stdin)} | wazero run ${name}.pb.wasm ${fn}`
     }
 
     function example(i) {

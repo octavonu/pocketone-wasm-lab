@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # The WASM lab under pocker: one pocketone process hosting three instances, each a normal app folder in pb_root/<id>
-# with its own pb_data/, pb_hooks/, pb_pages/ and pb_wasm/, routed by hostname. It uses the lab's binary and plugins
+# with its own pb_data/, pb_hooks/ (the JS hooks and the plugins, <name>.pb.wasm) and pb_pages/, routed by hostname. It uses the lab's binary and plugins
 # (../setup.sh builds them, with ext/wasm in the standard set every pocker instance gets) and its hooks, pages and
 # migrations (collections, admin@example.com / password).
 #
@@ -43,14 +43,12 @@ YAML
 
 rm -rf pb_root
 install() { # instance, plugin, [as]
-  local as="${3:-$2}" dir="pb_root/$1/pb_wasm"
-  mkdir -p "$dir"
-  [[ -f "$LAB/plugins/$2/plugin.json" ]] && cp "$LAB/plugins/$2/plugin.json" "$dir/$as.json"
-  cp "$LAB/plugins/$2/plugin.wasm" "$dir/$as.wasm"
+  cp "$LAB/plugins/$2/plugin.wasm" "pb_root/$1/pb_hooks/${3:-$2}.pb.wasm"
 }
 for id in alpha beta gamma; do
   mkdir -p "pb_root/$id"
   cp -R "$LAB/pb_hooks" "$LAB/pb_pages" "$LAB/pb_migrations" "pb_root/$id/"
+  rm -f "pb_root/$id"/pb_hooks/*.pb.wasm   # the single-app lab's plugins; each instance gets its own below
   sed -i '' "s/127.0.0.1:8090/$id.localhost:$PORT/g" "pb_root/$id/pb_hooks/main.pb.js"
 done
 install alpha summary-rust summary

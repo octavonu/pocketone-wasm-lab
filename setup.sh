@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Builds the WASM lab from scratch: PocketOne (its examples/pocketone, the stock binary) with ext/wasm in the standard
-# set, the plugins (WASI programs: summary in Go, Rust and Zig when their toolchains are there, edifact-orders-go,
+# set, the plugins (WASI programs: summary in Go, Rust and Zig, edifact-orders-go,
 # crypto, edifact-orders-rust, order-xml, devil, evil, memhog and waflows, and three that must be refused: phone,
-# library and fat_evil), and a fresh instance here (pb_data/, pb_wasm/) with the lab collections and a superuser.
-# Everything stays in this folder.
+# library and fat_evil), and a fresh instance here (pb_data/, pb_hooks/<name>.pb.wasm) with the lab collections and a
+# superuser. Everything stays in this folder.
 #
 #   ./setup.sh                              PocketOne with ext/wasm cloned into build/pocketone-src
 #   POCKETONE=~/src/pocketone ./setup.sh    or a checkout you have, with ext/wasm in it
@@ -64,7 +64,6 @@ build_go() { # name, source folder, [build tags], [library]
   local args=(-tags="${3:-}")
   [[ -n "${4:-}" ]] && args+=(-buildmode=c-shared)
   (cd "$2" && GOOS=wasip1 GOARCH=wasm go build "${args[@]}" -o "$LAB/plugins/$1/plugin.wasm" .)
-  [[ -f "$2/plugin.json" ]] && cp "$2/plugin.json" "plugins/$1/"
   echo "plugins/$1 ($(du -h "plugins/$1/plugin.wasm" | cut -f1))"
 }
 build_go summary "$WASM/example/summary"
@@ -73,34 +72,50 @@ build_go crypto "$WASM/example/crypto"
 build_go fat_evil "$WASM/testdata/evil"                  # evil in Go, ~11 MB: over MaxModulesMB, refused when it loads
 build_go phone "$WASM/testdata/imports" extism             # an Extism plugin: refused when it loads
 build_go library "$WASM/example/summary" "" c-shared       # summary built as a library, the usual mistake: refused
-rm -f plugins/library/plugin.json
-build_rust() { # name, crate folder, the crate's .wasm name
-  (cd "$2" && cargo build -q --release --target wasm32-wasip1)
+# The Rust and Zig plugins come built: ext/wasm keeps its examples built beside their sources
+# (example/<folder>/<name>.pb.wasm; its tests check they're what the sources build), and this lab keeps evil's
+# (src/evil/evil.pb.wasm). So the lab needs only Go. BUILD_WASM=1 ./setup.sh builds them from source instead (Rust
+# with the wasm32-wasip1 target, Zig 0.14).
+take() { # name, .wasm file
   mkdir -p "plugins/$1"
-  cp "$2/target/wasm32-wasip1/release/$3.wasm" "plugins/$1/plugin.wasm"
-  cp "$2/plugin.json" "plugins/$1/"
+  cp "$2" "plugins/$1/plugin.wasm"
   echo "plugins/$1 ($(du -h "plugins/$1/plugin.wasm" | cut -f1))"
 }
-if command -v cargo >/dev/null && rustup target list --installed 2>/dev/null | grep -q wasm32-wasip1; then
-  build_rust summary-rust "$WASM/example/summary-rust" summary
-  build_rust edifact-orders-rust "$WASM/example/edifact-orders-rust" orders           # EDIFACT ORDERS -> order JSON (edifact-rs)
-  build_rust order-xml "$WASM/example/order-xml" order-xml   # XML order -> the same JSON (roxmltree)
-  build_rust devil "$WASM/example/devil" devil               # tries files, env, a command, attacker.example: all refused
-  build_rust evil src/evil evil                  # tries files, env, args, TCP, HTTP, a port: all refused
-  build_rust memhog "$WASM/example/memhog" memhog            # asks for more memory than MaxCallMemoryMB allows
-  build_rust waflows "$WASM/example/waflows" waflows         # what pb_hooks lacks for WhatsApp Flows: RSA-OAEP, AES-GCM
-else echo "no cargo or no wasm32-wasip1 target (rustup target add wasm32-wasip1): skipping the Rust plugins"; fi
-ZIG="$(command -v zig || ls "$HOME"/.local/zig-*/zig 2>/dev/null | tail -1 || true)"
-if [[ -n "$ZIG" ]]; then
-  (cd "$WASM/example/summary-zig" && "$ZIG" build -Doptimize=ReleaseSmall)
-  mkdir -p plugins/summary-zig
-  cp "$WASM/example/summary-zig/zig-out/bin/summary.wasm" plugins/summary-zig/plugin.wasm
-  cp "$WASM/example/summary-zig/plugin.json" plugins/summary-zig/
-  echo "plugins/summary-zig ($(du -h plugins/summary-zig/plugin.wasm | cut -f1))"
-else echo "no zig: skipping summary-zig"; fi
+build_rust() { # name, crate folder, the crate's .wasm name. Paths remapped as ext/wasm's tests do: the module holds
+  # none of this machine's, and comes out the same as the one kept
+  local sysroot commit
+  sysroot="$(rustc --print sysroot)" commit="$(rustc -vV | sed -n 's/^commit-hash: //p')"
+  (cd "$2" && CARGO_ENCODED_RUSTFLAGS="--remap-path-prefix=$sysroot/lib/rustlib/src/rust=/rustc/$commit"$'\x1f'"--remap-path-prefix=${CARGO_HOME:-$HOME/.cargo}/registry/src=/cargo" \
+    cargo build -q --release --locked --target wasm32-wasip1)
+  take "$1" "$2/target/wasm32-wasip1/release/$3.wasm"
+}
+E="$WASM/example"
+if [[ "${BUILD_WASM:-}" == 1 ]]; then
+  command -v cargo >/dev/null || { echo "BUILD_WASM=1 needs Rust (and: rustup target add wasm32-wasip1)" >&2; exit 1; }
+  ZIG="$(command -v zig || ls "$HOME"/.local/zig-*/zig 2>/dev/null | tail -1 || true)"
+  [[ -n "$ZIG" ]] || { echo "BUILD_WASM=1 needs Zig 0.14" >&2; exit 1; }
+  build_rust summary-rust "$E/summary-rust" summary
+  build_rust edifact-orders-rust "$E/edifact-orders-rust" orders
+  build_rust order-xml "$E/order-xml" order-xml
+  build_rust devil "$E/devil" devil
+  build_rust evil src/evil evil
+  build_rust memhog "$E/memhog" memhog
+  build_rust waflows "$E/waflows" waflows
+  (cd "$E/summary-zig" && "$ZIG" build -Doptimize=ReleaseSmall)
+  take summary-zig "$E/summary-zig/zig-out/bin/summary.wasm"
+else
+  take summary-rust "$E/summary-rust/summary.pb.wasm"
+  take edifact-orders-rust "$E/edifact-orders-rust/edifact-orders-rust.pb.wasm"   # EDIFACT ORDERS -> order JSON (edifact-rs)
+  take order-xml "$E/order-xml/order-xml.pb.wasm"       # XML order -> the same JSON (roxmltree)
+  take devil "$E/devil/devil.pb.wasm"                   # tries files, env, a command, attacker.example: all refused
+  take evil src/evil/evil.pb.wasm                       # tries files, env, args, TCP, HTTP, a port: all refused
+  take memhog "$E/memhog/memhog.pb.wasm"                # asks for more memory than MaxCallMemoryMB allows
+  take waflows "$E/waflows/waflows.pb.wasm"             # what pb_hooks lacks for WhatsApp Flows: RSA-OAEP, AES-GCM
+  take summary-zig "$E/summary-zig/summary.pb.wasm"
+fi
 
 head -c 1000 plugins/summary/plugin.wasm > extras/broken.wasm   # not valid WebAssembly: refused when it loads
 
-step "3. a fresh instance (summary and edifact-orders-go in pb_wasm/)"
+step "3. a fresh instance (summary and edifact-orders-go in pb_hooks/)"
 ./reset.sh
 

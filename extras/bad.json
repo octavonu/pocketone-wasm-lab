@@ -1,4 +1,0 @@
-{
-  "description": "asks for a network dependency, which ext/wasm refuses: plugins get only their input",
-  "dependencies": { "openai": { "url": "https://api.openai.com" } }
-}

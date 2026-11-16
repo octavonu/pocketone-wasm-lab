@@ -12,8 +12,10 @@ process, as PocketHost does.
 
 ## Run it
 
-You need Go 1.27 (or `GOTOOLCHAIN=auto`), and for the Rust plugins `rustup target add wasm32-wasip1`. Zig 0.14 is
-optional (one plugin). The [wazero CLI](https://wazero.io) is handy for running a plugin by hand.
+You need only Go 1.27 (or `GOTOOLCHAIN=auto`): the Rust and Zig plugins come built (`ext/wasm` keeps its examples
+built beside their sources, and its tests check they're what the sources build; this lab keeps `src/evil`'s).
+`BUILD_WASM=1 ./setup.sh` builds them from source instead, with Rust (`rustup target add wasm32-wasip1`) and Zig 0.14.
+The [wazero CLI](https://wazero.io) is handy for running a plugin by hand.
 
 ```sh
 ./setup.sh     # once, ~2 min: builds everything and makes a fresh instance
@@ -23,10 +25,10 @@ optional (one plugin). The [wazero CLI](https://wazero.io) is handy for running 
 `setup.sh` clones PocketOne with `ext/wasm` (the `ext-wasm` branch of a fork, until it's in PocketOne) into
 `build/pocketone-src`. To use a checkout you already have: `POCKETONE=~/src/pocketone ./setup.sh`.
 
-- **Plugins page:** http://127.0.0.1:8090/wasm: what's in `pb_wasm/`, the limits every call runs within, and each
+- **Plugins page:** http://127.0.0.1:8090/wasm: the plugins in `pb_hooks/`, the limits every call runs within, and each
   plugin's functions, examples and module size.
 - **Try a plugin:** http://127.0.0.1:8090/wasm/edifact-orders-go (any name): input on the left (JSON, text or a file,
-  and the examples from the plugin's manifest); output, error, compile and run times and what the plugin wrote to
+  and the examples from the plugin's manifest, `<name> --describe`); output, error, compile and run times and what the plugin wrote to
   stderr on the right; below, the same call from pb_hooks and with the wazero CLI. Ctrl+Enter runs it.
 - **Dashboard:** http://127.0.0.1:8090/_/
 
@@ -75,14 +77,16 @@ plugins/devil/plugin.wasm run`): the box comes from WASI, not from PocketOne.
   Both give the same order (`PO-4711`, two lines). On `/wasm/edifact-orders-rust`, example 2 reads a full ORDERS
   message: parties, addresses, prices, allowances, and a warning for the wrong segment count in its UNT.
 
-**No restart.** Copy a plugin in the way an upload should, under a hidden name first, then renamed:
+**Deploy a plugin.** A plugin is one file, beside the JS hooks. Copy it in the way an upload should, under a hidden
+name first, then renamed:
 
 ```sh
-cp plugins/crypto/plugin.json pb_wasm/crypto.json
-cp plugins/crypto/plugin.wasm pb_wasm/.crypto.wasm.part && mv pb_wasm/.crypto.wasm.part pb_wasm/crypto.wasm
+cp plugins/crypto/plugin.wasm pb_hooks/.crypto.pb.wasm.part && mv pb_hooks/.crypto.pb.wasm.part pb_hooks/crypto.pb.wasm
 ```
 
-`/wasm` shows `crypto` at once, and `/wasm/crypto` runs it. Rename it to `crypto.wasm.off` and it's gone.
+The change in `pb_hooks/` restarts the app, as a `.pb.js` change does; then `/wasm` shows `crypto`, with the
+description, functions and examples it gives itself (`wazero run pb_hooks/crypto.pb.wasm --describe`), and
+`/wasm/crypto` runs it. Rename it to `crypto.pb.wasm.off` and it's gone.
 
 **Go or Rust?** `./bulk.sh 300` creates 300 posts at once, each summarized by the Rust plugin: a few seconds, all
 with a summary. Then `./plugin.sh install summary` (the Go build) and `./bulk.sh 20`: each call compiles a 4.3 MB
@@ -102,40 +106,44 @@ twins (`await $wasm.run.async(...)`), which run the plugin off the app's JS VM s
 meanwhile. A string goes to stdin as it is (EDIFACT, CSV, XML), anything else as JSON. See
 [pb_hooks/main.pb.js](pb_hooks/main.pb.js).
 
-A plugin is a **file** in `pb_wasm/`, beside `pb_data/` and `pb_hooks/`: `<name>.wasm` and, optionally,
-`<name>.json` (description, version, functions (default `run`), language, repository and examples). It gets there
-like the rest of the code: a copy, `pocketone deploy`, SFTP. Like `node script.js`, every call reads the plugin's files
-as they are then: a plugin added, changed or removed counts from the next call, with no restart. Nothing watches the
-folder and nothing stays in memory between calls. To turn a plugin off, remove or rename its `.wasm`. One that can't
-load (a broken module, a bad `.json`, a half-written upload) can't be called, and `/wasm` says why.
+A plugin is **one file** beside the JS hooks: `pb_hooks/<name>.pb.wasm`. It says what it is itself: run as
+`<name> --describe`, it prints its manifest (description, version, functions (default `run`), language, repository
+and examples), as JSON on stdout; the examples here keep it as `plugin.json` beside the source and build it in. A
+plugin that doesn't answer `--describe` gets the defaults; one whose manifest is wrong still runs, and `/wasm` shows
+the error. It gets there like the rest of the code: a copy, `pocketone deploy`, SFTP, and the change restarts the app,
+as a `.pb.js` change does. Like `node script.js`, every call reads the plugin's file as it is then, and nothing stays
+in memory between calls. To turn a plugin off, remove or rename it. One that can't load (a broken module, a
+half-written upload) can't be called, and `/wasm` says why. A function the plugin doesn't have is for the plugin to
+refuse: by convention it fails with `no_such_function`.
 
 ## Scripts
 
 | Script | What it does |
 |---|---|
-| `setup.sh` | Builds PocketOne (`examples/pocketone`, copied to `build/pocketone` with `wasm.New` in the standard set) as `bin/pocketone`, the plugins into `plugins/`, then runs `reset.sh`. |
-| `reset.sh` | A fresh instance: an empty `pb_data/` with the `posts` and `messages` collections and the two logins, and only `summary` (the Rust build) and `edifact-orders-go` in `pb_wasm/`. Doesn't rebuild. |
+| `setup.sh` | Builds PocketOne (`examples/pocketone`, copied to `build/pocketone` with `wasm.New` in the standard set) as `bin/pocketone`, the plugins into `plugins/` (Go built, Rust and Zig copied as kept built; `BUILD_WASM=1` builds those too), then runs `reset.sh`. |
+| `reset.sh` | A fresh instance: an empty `pb_data/` with the `posts` and `messages` collections and the two logins, and only `summary` (the Rust build) and `edifact-orders-go` in `pb_hooks/`. Doesn't rebuild. |
 | `start.sh` | Serves the instance in the foreground. Changes in `pb_hooks/` and `pb_pages/` show at once. |
-| `plugin.sh` | Copies plugins into `pb_wasm/`, as a deploy would: `list`, `install <name> [as]` (from `plugins/<name>`), `remove <name>`. |
+| `plugin.sh` | Copies plugins into `pb_hooks/` (`<name>.pb.wasm`), as a deploy would: `list`, `install <name> [as]` (from `plugins/<name>`), `remove <name>`. |
 | `bulk.sh [N]` | Creates N posts at once (default 1000); each gets its summary from a plugin before it's saved. |
 | `debug-build.sh` | Rebuilds only `bin/pocketone` without optimizations, for a debugger (`.vscode/launch.json`). |
 
 ## What's where
 
-The folder is the instance, laid out like one on PocketHost: `pb_data/`, `pb_hooks/`, `pb_migrations/`, `pb_pages/`
-and `pb_wasm/` side by side. The rest belongs to the lab.
+The folder is the instance, laid out like one on PocketHost: `pb_data/`, `pb_hooks/`, `pb_migrations/` and
+`pb_pages/` side by side. The rest belongs to the lab.
 
 ```
 pb_data/          the instance's data (reset.sh makes it again)
 pb_hooks/         main.pb.js: a summary on every new post, EDIFACT parsed on every new message, and the lab's
-                  routes: /api/lab/call, /api/lab/wasm, /api/lab/order, /api/lab/summarize ($http.send)
+                  routes: /api/lab/call, /api/lab/wasm, /api/lab/order, /api/lab/summarize ($http.send); and the
+                  instance's plugins, <name>.pb.wasm
 pb_migrations/    the posts and messages collections, the two logins
-pb_pages/         /wasm (what's in pb_wasm/) and /wasm/<name> (try a plugin); /login, /logout
-pb_wasm/          the instance's plugins
+pb_pages/         /wasm (the plugins in pb_hooks/) and /wasm/<name> (try a plugin); /login, /logout
 
-src/              two lab plugins: edifact (Go), evil (Rust). The others are ext/wasm's examples, in PocketOne
-plugins/          the plugins, built (setup.sh)
-extras/           files for the scenarios: order.edi, order.xml, bad.json, broken.wasm (setup.sh)
+src/              two lab plugins: edifact (Go), evil (Rust, kept built: evil.pb.wasm). The others are ext/wasm's
+                  examples, in PocketOne
+plugins/          the plugins (setup.sh)
+extras/           files for the scenarios: order.edi, order.xml, broken.wasm (setup.sh)
 pocker/           the same lab under pocker: three instances in one process
 bin/, build/      the built binary, and the copy of PocketOne's examples/pocketone it's built from
 ```
