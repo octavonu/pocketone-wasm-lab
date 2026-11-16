@@ -58,5 +58,5 @@ as `busy`) while you create posts on alpha: alpha's calls don't wait for beta's.
 and, within a second, edit `pb_root/beta/pb_hooks/main.pb.js`: the call finishes, then the new hooks take over.
 
 **Deploy.** From a project folder with `pb_hooks/` and a `pb_wasm/` holding a new plugin:
-`POCKETONE_TOKEN=$(tok beta) ../bin/pocketone deploy http://beta.localhost:8092`. The new plugin answers on beta at
+`P1_TOKEN=$(tok beta) ../bin/pocketone deploy http://beta.localhost:8092`. The new plugin answers on beta at
 once, with no restart.
