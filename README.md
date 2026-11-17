@@ -101,9 +101,9 @@ A plugin is an ordinary program built for WASI (`wasip1`): it reads its input on
 "retryable"}`). The function asked for is its first argument (`os.Args[1]` in Go). The same shape as a program run
 with `$os.exec`, without access to anything.
 
-It's called from **pb_hooks** only: `$wasm.run(name, input)`, `$wasm.call(name, function, input)`, and the `.async`
-twins (`await $wasm.run.async(...)`), which run the plugin off the app's JS VM so the app serves other requests
-meanwhile. A string goes to stdin as it is (EDIFACT, CSV, XML), anything else as JSON. See
+It's called from **pb_hooks** only, in an async hook: `await $wasm.run.async(name, input)` or `await
+$wasm.call.async(name, function, input)`. Calls are async only: the plugin runs off the app's JS VM, so the app serves
+other requests meanwhile. A string goes to stdin as it is (EDIFACT, CSV, XML), anything else as JSON. See
 [pb_hooks/main.pb.js](pb_hooks/main.pb.js).
 
 A plugin is **one file** beside the JS hooks: `pb_hooks/<name>.pb.wasm`. It says what it is itself: run as
@@ -135,7 +135,8 @@ The folder is the instance, laid out like one on PocketHost: `pb_data/`, `pb_hoo
 ```
 pb_data/          the instance's data (reset.sh makes it again)
 pb_hooks/         main.pb.js: a summary on every new post, EDIFACT parsed on every new message, and the lab's
-                  routes: /api/lab/call, /api/lab/wasm, /api/lab/order, /api/lab/summarize ($http.send); and the
+                  routes: /api/lab/call, /api/lab/wasm, /api/lab/order, /api/lab/summarize ($http.send),
+                  /api/lab/try/<name> (the Run button on /wasm/<name>); and the
                   instance's plugins, <name>.pb.wasm
 pb_migrations/    the posts and messages collections, the two logins
 pb_pages/         /wasm (the plugins in pb_hooks/) and /wasm/<name> (try a plugin); /login, /logout

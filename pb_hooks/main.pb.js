@@ -3,9 +3,8 @@
 // hook gives it is its stdin (a string as it is, anything else as JSON), what it writes to stdout comes back (parsed
 // if it's JSON). The hook decides what to save.
 //
-// The app has one JS VM: a sync $wasm.run holds it while the plugin runs, so the app's other requests wait. The hooks
-// below that can meet a slow plugin (Go compiles for over a second each call) are async and await $wasm.run.async,
-// so the app serves other requests meanwhile; /api/lab/order calls fast Rust plugins and stays sync.
+// Calls are async only: the hooks are async and await $wasm.run.async / $wasm.call.async. The plugin runs off the
+// app's one JS VM, so the app serves other requests meanwhile (a Go plugin compiles for over a second each call).
 onBootstrap((e) => {
   e.app.logger().info("lab hooks loaded")
   e.next();
@@ -42,11 +41,11 @@ onRecordCreate(async (e) => {
 // An order, EDIFACT ORDERS or XML, read into one order JSON: the hook looks at the format and picks the plugin
 // (edifact-orders-rust or order-xml, both Rust); the plugins only read. Install them first: ./plugin.sh install edifact-orders-rust, order-xml.
 //   curl -X POST http://127.0.0.1:8090/api/lab/order --data-binary @extras/order.edi -H "Authorization: <token>"
-routerAdd("POST", "/api/lab/order", (e) => {
+routerAdd("POST", "/api/lab/order", async (e) => {
   const raw = toString(e.request.body)
   const plugin = raw.trimStart().startsWith("<") ? "order-xml" : "edifact-orders-rust"
   try {
-    return e.json(200, { plugin: plugin, order: $wasm.run(plugin, raw) })
+    return e.json(200, { plugin: plugin, order: await $wasm.run.async(plugin, raw) })
   } catch (err) {
     return e.json(400, { plugin: plugin, error: { code: err.code, message: err.message } })
   }
@@ -79,3 +78,40 @@ routerAdd("GET", "/api/lab/call", async (e) => {
 
 // The plugins in pb_hooks/ and how each is doing (plugin.sh list), superusers only.
 routerAdd("GET", "/api/lab/wasm", (e) => e.json(200, $wasm.plugins()), $apis.requireSuperuserAuth())
+
+// The /wasm/<name> page's "Run" button: {function, input, mode: "text" | "json"} -> what $wasm.inspect.async gives
+// (output, error, stderr, timings). Here and not in the page, since pages run synchronously and calls are async.
+// Superusers only, signed in on the page (the pb_auth cookie) or with a token; and only from this site's pages.
+routerAdd("POST", "/api/lab/try/{name}", async (e) => {
+  if (!labSuperuser(e)) return e.json(403, { error: { code: "forbidden", message: "superusers only" } })
+  const origin = e.request.header.get("Origin")
+  if (origin && origin !== (e.request.tls ? "https://" : "http://") + e.request.host) {
+    return e.json(403, { error: { code: "forbidden", message: "not from this site" } })
+  }
+  const name = e.request.pathValue("name")
+  const p = $wasm.plugins().find((p) => p.name === name)
+  if (!p || !p.running) return e.json(404, { error: { code: "not_loaded", message: "the plugin isn't running" } })
+  const body = e.requestInfo().body
+  let input = String(body.input ?? "")
+  if (body.mode === "json") {
+    try {
+      input = JSON.parse(input)
+    } catch (err) {
+      return e.json(400, { error: { code: "bad_json", message: "the input isn't JSON: " + err.message } })
+    }
+  }
+  return e.json(200, await $wasm.inspect.async(name, String(body.function || "run"), input))
+})
+
+// labSuperuser: the request's superuser, from a token (Authorization) or the pages' pb_auth cookie ({token, record}).
+function labSuperuser(e) {
+  if (e.auth) return e.auth.isSuperuser()
+  try {
+    let v = e.request.cookie("pb_auth").value
+    if (!v.startsWith("{")) v = decodeURIComponent(v)
+    const rec = $app.findAuthRecordByToken(JSON.parse(v).token, "auth")
+    return rec.isSuperuser()
+  } catch (err) {
+    return false
+  }
+}

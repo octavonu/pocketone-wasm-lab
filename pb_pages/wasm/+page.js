@@ -15,9 +15,9 @@ module.exports = {
       examples: (p.examples || []).map((ex) => ({
         ...ex,
         hook: ex.function === "run"
-          ? `$wasm.run(${JSON.stringify(p.name)}, ${JSON.stringify(ex.input)})`
-          : `$wasm.call(${JSON.stringify(p.name)}, ${JSON.stringify(ex.function)}, ${JSON.stringify(ex.input)})`,
-        // a string goes to stdin as it is, anything else as JSON (as $wasm.run does)
+          ? `await $wasm.run.async(${JSON.stringify(p.name)}, ${JSON.stringify(ex.input)})`
+          : `await $wasm.call.async(${JSON.stringify(p.name)}, ${JSON.stringify(ex.function)}, ${JSON.stringify(ex.input)})`,
+        // a string goes to stdin as it is, anything else as JSON (as $wasm.run.async does)
         local: `printf '%s' ${shellQuote(typeof ex.input === "string" ? ex.input : JSON.stringify(ex.input))}` +
           ` | wazero run ${p.name}.pb.wasm ${ex.function}`,
         // the start of the input, on one line, for the collapsed example's title

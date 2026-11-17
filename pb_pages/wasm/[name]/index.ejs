@@ -105,8 +105,8 @@
         try { input = JSON.parse(text); stdin = typeof input === "string" ? input : JSON.stringify(input) } catch { input = text }
       }
       $("hook").textContent = fn === "run"
-        ? `$wasm.run(${JSON.stringify(name)}, ${JSON.stringify(input)})`
-        : `$wasm.call(${JSON.stringify(name)}, ${JSON.stringify(fn)}, ${JSON.stringify(input)})`
+        ? `await $wasm.run.async(${JSON.stringify(name)}, ${JSON.stringify(input)})`
+        : `await $wasm.call.async(${JSON.stringify(name)}, ${JSON.stringify(fn)}, ${JSON.stringify(input)})`
       $("local").textContent = `printf '%s' ${quote(stdin)} | wazero run ${name}.pb.wasm ${fn}`
     }
 
@@ -125,7 +125,7 @@
       $("status").textContent = "running…"
       $("run").disabled = true
       try {
-        const res = await fetch(location.pathname, {
+        const res = await fetch("/api/lab/try/" + encodeURIComponent(name), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ function: $("fn").value, input: $("input").value, mode: mode() }),
