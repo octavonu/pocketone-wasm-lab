@@ -1,15 +1,15 @@
 /// <reference path="../../../pb_data/types.d.ts" />
-// Try one plugin from the browser: /wasm/<name>. The page sends what's typed on the left to /api/lab/try/<name> in
-// pb_hooks, which calls the plugin with $wasm.inspect.async (pages run synchronously, calls are async), and shows on
-// the right what came back: the output, the error, what the plugin wrote to stderr, and how long compiling and
+// Try one module from the browser: /wasm/<name>. The page sends what's typed on the left to /api/lab/try/<name> in
+// pb_hooks, which calls the module with $wasm.inspect.async (pages run synchronously, calls are async), and shows on
+// the right what came back: the output, the error, what the module wrote to stderr, and how long compiling and
 // running took. Superusers only (../+middleware.js, and the route checks too).
 module.exports = {
   load(ctx) {
-    const plugin = $wasm.plugins().find((p) => p.name === ctx.params.name)
-    if (!plugin) ctx.res.status(404)
-    ctx.data.plugin = plugin || null
+    const mod = $wasm.modules().find((p) => p.name === ctx.params.name)
+    if (!mod) ctx.res.status(404)
+    ctx.data.module = mod || null
     ctx.data.limits = $wasm.limits()
-    ctx.data.sizeText = plugin && plugin.size ? size(plugin.size) : ""
+    ctx.data.sizeText = mod && mod.size ? size(mod.size) : ""
   },
 }
 

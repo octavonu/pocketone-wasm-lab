@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Runs the lab instance in the foreground; Ctrl+C stops it. This folder is the instance, laid out like one on
 # PocketHost: pb_data/, pb_hooks/, pb_migrations/ and pb_pages/ side by side, each found beside pb_data.
-# Hook and page edits show up at once (hooks reload); so do plugins, pb_hooks/<name>.pb.wasm. Extra flags go to
+# Hook and page edits show up at once (hooks reload); so do modules, pb_hooks/<name>.pb.wasm. Extra flags go to
 # `pocketone serve`.
 set -euo pipefail
 cd "$(dirname "$0")"

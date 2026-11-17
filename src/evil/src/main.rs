@@ -1,7 +1,7 @@
-//! evil, a lab plugin in Rust: a hostile plugin, small. "run" tries every way out of the box it can and reports what
+//! evil, a lab module in Rust: a hostile module, small. "run" tries every way out of the box it can and reports what
 //! it got; its input names a listening host:port to try to reach ({"target": "127.0.0.1:8090"}). Each entry is
 //! "refused: ..." or "GOT: ...". "listen" listens on a port ({"addr": "127.0.0.1:18777"}), to see whether the outside
-//! can reach it; "exit" tries to end the host. The same plugin in Go (fat_evil, ~11 MB, from ext/wasm's
+//! can reach it; "exit" tries to end the host. The same module in Go (fat_evil, ~11 MB, from ext/wasm's
 //! testdata/evil) is over the default MaxRunningMB and isn't loaded at all.
 //!
 //! Build: cargo build --release --target wasm32-wasip1
@@ -12,9 +12,9 @@ use std::time::Duration;
 use std::{env, fs, process};
 
 fn main() {
-    // `<name> --describe`: the manifest, kept as plugin.json beside the source
+    // `<name> --describe`: the manifest, kept as manifest.json beside the source
     if env::args().nth(1).as_deref() == Some("--describe") {
-        print!("{}", include_str!("../plugin.json"));
+        print!("{}", include_str!("../manifest.json"));
         return;
     }
     let mut raw = String::new();

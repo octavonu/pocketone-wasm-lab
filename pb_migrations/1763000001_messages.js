@@ -1,5 +1,5 @@
 /// <reference path="../pb_data/types.d.ts" />
-// EDIFACT messages: pb_hooks/main.pb.js hands the raw text to the edifact-orders-go plugin and saves what it parsed.
+// EDIFACT messages: pb_hooks/main.pb.js hands the raw text to the edifact-orders-go module and saves what it parsed.
 migrate((app) => {
   app.save(new Collection({
     type: "base", name: "messages",

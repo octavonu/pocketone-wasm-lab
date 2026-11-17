@@ -1,5 +1,5 @@
 {
-  "description": "Hostile plugin, small (Rust): tries every way out of the box (files, environment, args, TCP, HTTP, a port) and reports what it got. All refused.",
+  "description": "Hostile module, small (Rust): tries every way out of the box (files, environment, args, TCP, HTTP, a port) and reports what it got. All refused.",
   "version": "1.0.0",
   "functions": ["run", "listen", "exit"],
   "language": "Rust",

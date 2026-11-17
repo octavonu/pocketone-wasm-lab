@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Creates N posts at once (default 1000) through the API; each gets its summary from the plugin before it's saved
+# Creates N posts at once (default 1000) through the API; each gets its summary from the module before it's saved
 # (pb_hooks). Prints how long that took. The lab must be running (./start.sh).
 set -euo pipefail
 N="${1:-1000}"

@@ -9,13 +9,13 @@
 
 <section class="card">
   <h2>pb_hooks/*.pb.wasm</h2>
-  <p class="muted">A plugin is a closed box: it gets the input your pb_hooks give it and returns a result. It can't
+  <p class="muted">A module is a closed box: it gets the input your pb_hooks give it and returns a result. It can't
     reach the database, files or network.</p>
-  <p class="muted">Each plugin is one file beside your JS hooks: <code>pb_hooks/&lt;name&gt;.pb.wasm</code>. It says
+  <p class="muted">Each module is one file beside your JS hooks: <code>pb_hooks/&lt;name&gt;.pb.wasm</code>. It says
     what it is itself, when run as <code>&lt;name&gt; --describe</code> (description, version, functions (default:
     <code>run</code>), language, repository and examples). Copy, deploy or upload it with the rest of your code: each
     call reads the file as it is then, and a change in <code>pb_hooks/</code> restarts the app, as for a
-    <code>.pb.js</code>. To turn a plugin off, remove or rename it.</p>
+    <code>.pb.js</code>. To turn a module off, remove or rename it.</p>
 </section>
 
 <section class="card">
@@ -31,15 +31,15 @@
     <tr><th>Input or output</th><td><%= Math.round(data.limits.maxPayload / (1 << 20)) %> MB</td></tr>
   </table>
   <p class="muted">A call waits until it fits in both "at once" limits, up to <%= data.limits.timeoutMs / 1000 %> s, then fails as
-    <code>busy</code>. So a plugin's calls run at once as many times as its module fits in
+    <code>busy</code>. So a module's calls run at once as many times as its size fits in
     <%= data.limits.maxModulesMB %> MB, and at most <%= data.limits.maxConcurrent %> times.</p>
 </section>
 
-<% if (!data.plugins.length) { %>
-  <p class="muted">No plugins in pb_hooks/ yet.</p>
+<% if (!data.modules.length) { %>
+  <p class="muted">No modules in pb_hooks/ yet.</p>
 <% } %>
 
-<% for (const p of data.plugins) { %>
+<% for (const p of data.modules) { %>
   <section class="card" id="<%= p.name %>">
     <div class="row">
       <h2><% if (p.running) { %><a href="/wasm/<%= encodeURIComponent(p.name) %>"><%= p.name %></a><% } else { %><%= p.name %><% } %></h2>

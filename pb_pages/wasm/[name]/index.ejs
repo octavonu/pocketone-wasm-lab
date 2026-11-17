@@ -1,4 +1,4 @@
-<% const p = data.plugin %>
+<% const p = data.module %>
 <% slot('title', () => { %><%= p ? p.name : 'Not found' %> · WASM<% }) %>
 <style>
   main { max-width: 1240px; }
@@ -26,7 +26,7 @@
 </header>
 
 <% if (!p) { %>
-  <p class="flash error">No plugin called <code><%= ctx.params.name %></code> in <code>pb_hooks/</code>.</p>
+  <p class="flash error">No module called <code><%= ctx.params.name %></code> in <code>pb_hooks/</code>.</p>
 <% } else if (!p.running) { %>
   <p class="flash error">Not running: <%= p.error %></p>
 <% } else { %>
@@ -60,7 +60,7 @@
         <% p.examples.forEach((ex, i) => { %><button type="button" data-example="<%= i %>"><%= i + 1 %>. <%= ex.function %></button><% }) %>
       </div>
       <% } %>
-      <textarea id="input" spellcheck="false" placeholder="the plugin's stdin"></textarea>
+      <textarea id="input" spellcheck="false" placeholder="the module's stdin"></textarea>
       <div class="tools">
         <button class="primary" id="run">Run</button>
         <span class="muted">Ctrl+Enter</span>

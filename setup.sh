@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Builds the WASM lab from scratch: PocketOne (its examples/pocketone, the stock binary) with ext/wasm in the standard
-# set, the plugins (WASI programs: summary in Go, Rust and Zig, edifact-orders-go,
+# set, the modules (WASI programs: summary in Go, Rust and Zig, edifact-orders-go,
 # crypto, edifact-orders-rust, order-xml, devil, evil, memhog and waflows, and three that must be refused: phone,
 # library and fat_evil), and a fresh instance here (pb_data/, pb_hooks/<name>.pb.wasm) with the lab collections and a
 # superuser. Everything stays in this folder.
@@ -57,14 +57,14 @@ PY
 (cd build/pocketone && go mod tidy && go build -ldflags "-X ganigeorgiev.com/pocketbase/pocketbase.Version=wasm-lab" -o "$LAB/bin/pocketone" .)
 echo "bin/pocketone"
 
-step "2. plugins -> plugins/"
-rm -rf plugins
+step "2. modules -> modules/"
+rm -rf modules
 build_go() { # name, source folder, [build tags], [library]
-  mkdir -p "plugins/$1"
+  mkdir -p "modules/$1"
   local args=(-tags="${3:-}")
   [[ -n "${4:-}" ]] && args+=(-buildmode=c-shared)
-  (cd "$2" && GOOS=wasip1 GOARCH=wasm go build "${args[@]}" -o "$LAB/plugins/$1/plugin.wasm" .)
-  echo "plugins/$1 ($(du -h "plugins/$1/plugin.wasm" | cut -f1))"
+  (cd "$2" && GOOS=wasip1 GOARCH=wasm go build "${args[@]}" -o "$LAB/modules/$1/module.wasm" .)
+  echo "modules/$1 ($(du -h "modules/$1/module.wasm" | cut -f1))"
 }
 build_go summary "$WASM/example/summary"
 build_go edifact-orders-go src/edifact
@@ -72,14 +72,14 @@ build_go crypto "$WASM/example/crypto"
 build_go fat_evil "$WASM/testdata/evil"                  # evil in Go, ~11 MB: over MaxModulesMB, refused when it loads
 build_go phone "$WASM/testdata/imports" extism             # an Extism plugin: refused when it loads
 build_go library "$WASM/example/summary" "" c-shared       # summary built as a library, the usual mistake: refused
-# The Rust and Zig plugins come built: ext/wasm keeps its examples built beside their sources
+# The Rust and Zig modules come built: ext/wasm keeps its examples built beside their sources
 # (example/<folder>/<name>.pb.wasm; its tests check they're what the sources build), and this lab keeps evil's
 # (src/evil/evil.pb.wasm). So the lab needs only Go. BUILD_WASM=1 ./setup.sh builds them from source instead (Rust
 # with the wasm32-wasip1 target, Zig 0.14).
 take() { # name, .wasm file
-  mkdir -p "plugins/$1"
-  cp "$2" "plugins/$1/plugin.wasm"
-  echo "plugins/$1 ($(du -h "plugins/$1/plugin.wasm" | cut -f1))"
+  mkdir -p "modules/$1"
+  cp "$2" "modules/$1/module.wasm"
+  echo "modules/$1 ($(du -h "modules/$1/module.wasm" | cut -f1))"
 }
 build_rust() { # name, crate folder, the crate's .wasm name. Paths remapped as ext/wasm's tests do: the module holds
   # none of this machine's, and comes out the same as the one kept
@@ -114,7 +114,7 @@ else
   take summary-zig "$E/summary-zig/summary.pb.wasm"
 fi
 
-head -c 1000 plugins/summary/plugin.wasm > extras/broken.wasm   # not valid WebAssembly: refused when it loads
+head -c 1000 modules/summary/module.wasm > extras/broken.wasm   # not valid WebAssembly: refused when it loads
 
 step "3. a fresh instance (summary and edifact-orders-go in pb_hooks/)"
 ./reset.sh

@@ -1,7 +1,7 @@
 # built by setup.sh
 /bin/
 /build/
-/plugins/
+/modules/
 /extras/broken.wasm
 target/
 # the instances (reset.sh, pocker/setup.sh make them again)

@@ -1,4 +1,4 @@
-// Command edifact is a lab plugin: an EDIFACT message (raw text on stdin, as the hook got it) parsed into JSON.
+// Command edifact is a lab module: an EDIFACT message (raw text on stdin, as the hook got it) parsed into JSON.
 //
 //	stdin:  UNA:+.? 'UNB+UNOA:2+SENDER+RECEIVER+261114:1200+1'UNH+1+ORDERS:D:96A:UN'...
 //	stdout: {"type": "ORDERS", "count": 7, "segments": [{"tag": "UNB", "elements": [["UNOA", "2"], ["SENDER"], ...]}, ...]}
@@ -21,9 +21,9 @@ type segment struct {
 	Elements [][]string `json:"elements"`
 }
 
-// manifest is what `<name> --describe` prints: plugin.json beside the source.
+// manifest is what `<name> --describe` prints: manifest.json beside the source.
 //
-//go:embed plugin.json
+//go:embed manifest.json
 var manifest string
 
 func main() {

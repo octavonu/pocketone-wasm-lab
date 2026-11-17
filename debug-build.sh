@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Rebuilds only bin/pocketone, without optimizations (-N -l), so a debugger shows every variable and line. It uses
-# build/pocketone from ./setup.sh and leaves pb_data/, pb_hooks/ and the plugins as they are. ./setup.sh builds the normal
+# build/pocketone from ./setup.sh and leaves pb_data/, pb_hooks/ and the modules as they are. ./setup.sh builds the normal
 # binary again.
 #
 #   ./debug-build.sh   then ./start.sh, and attach from VS Code ("Attach to lab (start.sh)")
