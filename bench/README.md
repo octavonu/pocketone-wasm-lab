@@ -5,6 +5,9 @@ three ways with wazero's compiler:
 
 - **cold:** compile the `.wasm` to native code, then call it. This is what `ext/wasm` does today, on every call.
 - **disk:** load the native code from wazero's on-disk cache (`NewCompilationCacheWithDir`), then call it.
+- **signed:** the same as disk, after checking the native file's HMAC signature: a `.sig` beside it, made with a
+  host-only key over `sha256(wasm) || native code`, so a planted or tampered native file is never loaded.
+- **once:** signed, with each native file checked once per process; later calls skip the hashing.
 - **RAM:** call a module that's already compiled in memory.
 
 Every call runs in a fresh instance, the way `ext/wasm` runs one, and checks the module's answer.
@@ -25,14 +28,16 @@ folder, removed at the end. The modules are embedded, so nothing else is needed.
 ## Output
 
 ```
-darwin/amd64, 16 CPUs, go1.27.4, wazero v1.12.0, median of 5
+darwin/amd64, 16 CPUs, go1.27.4, wazero v1.12.0, median of 9
 
-module             .wasm      native      cold      disk       RAM
-summary-go       4.32 MB    17.24 MB    1.91 s   79.0 ms    4.3 ms
-summary-rust     0.09 MB     0.35 MB   65.3 ms    3.2 ms    271 µs
-summary-zig      0.05 MB     0.18 MB   47.8 ms    2.2 ms    562 µs
+module             .wasm      native      cold      disk    signed      once       RAM
+summary-go       4.32 MB    17.24 MB    1.54 s   73.5 ms  143.9 ms   84.3 ms    4.1 ms
+summary-rust     0.09 MB     0.35 MB   66.5 ms    3.2 ms    4.2 ms    2.3 ms    341 µs
+summary-zig      0.05 MB     0.18 MB   48.2 ms    2.1 ms    2.9 ms    1.8 ms    553 µs
 
-cold = compile + call, disk = load native code from disk + call, RAM = call only
+cold = compile + call, disk = load native code from disk + call,
+signed = check the native file's HMAC + disk, once = signed after the file's first call in the process,
+RAM = call only
 
 stateful (D): one instance kept, 100 calls into it
 
